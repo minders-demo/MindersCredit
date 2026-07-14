@@ -2,26 +2,60 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MindersCredit. — Finanzas cooperativas para tu progreso</title>
-  
+
+    <!--
+      AMPLITUDE WEB EXPERIMENT
+      Este script habilita:
+      - El Visual Editor
+      - La asignación de variantes web
+      - La aplicación de cambios creados desde Amplitude
+
+      Debe permanecer lo más arriba posible dentro del <head>.
+    -->
+    <script
+      type="text/javascript"
+      src="https://cdn.amplitude.com/script/714214e5842a299f3fa47e23db5fe728.experiment.js"
+    ></script>
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <title>
+      MindersCredit. — Finanzas cooperativas para tu progreso
+    </title>
+
     <!-- Single Page Apps for GitHub Pages -->
     <script type="text/javascript">
-      (function(l) {
-        if (l.search[1] === '/' ) {
-          var decoded = l.search.slice(1).split('&').map(function(s) { 
-            return s.replace(/~and~/g, '&')
-          }).join('?');
-          window.history.replaceState(null, null,
-              l.pathname.slice(0, -1) + decoded + l.hash
+      (function (location) {
+        if (location.search[1] === "/") {
+          const decoded = location.search
+            .slice(1)
+            .split("&")
+            .map(function (segment) {
+              return segment.replace(/~and~/g, "&");
+            })
+            .join("?");
+
+          window.history.replaceState(
+            null,
+            "",
+            location.pathname.slice(0, -1) +
+              decoded +
+              location.hash
           );
         }
-      }(window.location))
+      })(window.location);
     </script>
   </head>
+
   <body class="bg-[#F2F2F2]">
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+
+    <script
+      type="module"
+      src="/src/main.tsx"
+    ></script>
   </body>
 </html>
-
