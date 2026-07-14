@@ -2,42 +2,69 @@ name: Desplegar MindersCredit en GitHub Pages
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: 'pages'
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  VITE_AMPLITUDE_API_KEY: 714214e5842a299f3fa47e23db5fe728
+  VITE_AMPLITUDE_DEPLOYMENT_KEY: client-wWrHjwtplLVZw6xY8DpVp7K3KdInyICP
+  VITE_AMPLITUDE_SERVER_ZONE: US
+  PAGES_ARTIFACT_NAME: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validar TypeScript
+        run: npm run lint
+
+      - name: Construir aplicación
+        run: npm run build
+
+      - name: Subir artefacto único de Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          name: ${{ env.PAGES_ARTIFACT_NAME }}
+          path: ./dist
+
   deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Configurar Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-      - name: Instalar dependencias
-        run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Configurar Pages
-        uses: actions/configure-pages@v5
-      - name: Subir artefacto
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './dist'
-      - name: Desplegar a GitHub Pages
+      - name: Desplegar en GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
