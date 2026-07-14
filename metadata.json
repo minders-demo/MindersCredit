@@ -1,0 +1,6 @@
+{
+  "name": "MindersCredit",
+  "description": "Cooperativa de ahorro y crédito digital chilena ficticia. Demo para instrumentación de Amplitude con journeys financieros completos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
