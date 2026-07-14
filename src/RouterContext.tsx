@@ -1,5 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { trackEvent } from "./analytics";
+
+// Base pública del sitio: "/MindersCredit/" en GitHub Pages, "/" en desarrollo local.
+// Vite la inyecta automáticamente desde vite.config.ts (base).
+const BASE = ((import.meta as any).env.BASE_URL || "/") as string;
+const BASE_PREFIX = BASE.endsWith("/") ? BASE.slice(0, -1) : BASE; // "/MindersCredit" o ""
 
 export interface RouterContextType {
   currentPath: string;
@@ -33,17 +37,26 @@ export const getSectionFromPath = (path: string): string => {
 };
 
 export function RouterProvider({ children }: { children: ReactNode }) {
-  // Get initial path from hash or pathname, ignoring base paths if needed
+  // Lee la ruta actual del navegador y le quita el prefijo base (/MindersCredit)
   const getCleanPath = () => {
-    let path = window.location.pathname;
-    // Strip trailing slashes unless it is root
-    if (path.length > 1 && path.endsWith("/")) {
-      path = path.slice(0, -1);
-    }
-    // Also support hash-based routing fallback for simple hosting without SPA redirection
+    // Soporte para rutas por hash (enlaces de continuidad #/continue, etc.)
     const hash = window.location.hash;
     if (hash && hash.startsWith("#")) {
       return hash.substring(1) || "/";
+    }
+
+    let path = window.location.pathname;
+
+    // Quita el prefijo base si está presente
+    if (BASE_PREFIX && path.startsWith(BASE_PREFIX)) {
+      path = path.slice(BASE_PREFIX.length);
+    }
+    if (!path.startsWith("/")) {
+      path = "/" + path;
+    }
+    // Quita slash final salvo en la raíz
+    if (path.length > 1 && path.endsWith("/")) {
+      path = path.slice(0, -1);
     }
     return path || "/";
   };
@@ -65,23 +78,22 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Track page views whenever the path changes
-  useEffect(() => {
-    const seccion = getSectionFromPath(currentPath);
-    // Removed manual page_viewed event, now handled by autocapture.
-  }, [currentPath]);
-
   const navigate = (path: string, options?: { replace?: boolean; skipScroll?: boolean }) => {
-    // If we're using Hash-based fallback, update hash
+    // Fallback por hash (se mantiene igual: los hash no necesitan el prefijo base)
     if (window.location.hash || !window.history.pushState) {
       window.location.hash = path;
     } else {
+      // Construye la URL completa CON el prefijo base para que la barra
+      // de direcciones siempre muestre /MindersCredit/...
+      const normalized = path.startsWith("/") ? path : "/" + path;
+      const fullUrl = (BASE_PREFIX + normalized) || "/";
+
       if (options?.replace) {
-        window.history.replaceState({}, "", path);
+        window.history.replaceState({}, "", fullUrl);
       } else {
-        window.history.pushState({}, "", path);
+        window.history.pushState({}, "", fullUrl);
       }
-      setCurrentPath(path);
+      setCurrentPath(normalized);
     }
 
     if (!options?.skipScroll) {
