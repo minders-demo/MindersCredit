@@ -170,6 +170,12 @@ export default function SimuladorConsumo() {
 
   const stepRef = useRef(step);
   const completedRef = useRef(false);
+  // Ref del journey activo: evita que el guardado reactive el efecto de cálculo (bucle infinito)
+  const activeJourneyRef = useRef(activeJourney);
+
+  useEffect(() => {
+    activeJourneyRef.current = activeJourney;
+  }, [activeJourney]);
 
   useEffect(() => {
     stepRef.current = step;
@@ -238,11 +244,11 @@ export default function SimuladorConsumo() {
     const baseAmount = monto;
     const insurancePremium = incluirSeguros ? baseAmount * 0.025 : 0; // 2.5% del crédito
     const totalFinanced = baseAmount + insurancePremium;
-    
+
     // Tasa mensual preferente (pensionado v/s normal)
     const isPensionado = user?.pensionada === true || localStorage.getItem("minders_pensionado") === "true";
     const rateMonthly = isPensionado ? 0.0149 : 0.0199;
-    
+
     // Ajuste por período de gracia
     const graceFactor = diasGracia === 60 ? 1.015 : diasGracia === 90 ? 1.03 : 1.0;
     const finalFinanced = totalFinanced * graceFactor;
@@ -250,41 +256,45 @@ export default function SimuladorConsumo() {
     // Amortización Francesa
     const factor = (rateMonthly * Math.pow(1 + rateMonthly, cuotas)) / (Math.pow(1 + rateMonthly, cuotas) - 1);
     const cuota = Math.round(finalFinanced * factor);
-    
+
     setValorCuota(cuota);
     setCtc(cuota * cuotas);
-    
-    // Enviar evento de simulación recalculada si estamos en el paso 2
+
+    // Trackeo y guardado con debounce: se ejecuta UNA vez por cambio real de parámetros,
+    // y usa activeJourneyRef (no la dependencia) para no re-disparar el efecto al guardar.
     if (step === 2) {
       const currentCae = isPensionado ? 20.12 : 26.88;
-      amplitudeService.track("simulacion_calculada", {
-        monto: baseAmount,
-        cuotas: cuotas,
-        valor_cuota: cuota,
-        incluye_seguros: incluirSeguros,
-        dias_gracia: diasGracia,
-        cae: currentCae
-      });
+      const timer = setTimeout(() => {
+        amplitudeService.track("simulacion_calculada", {
+          monto: baseAmount,
+          cuotas: cuotas,
+          valor_cuota: cuota,
+          incluye_seguros: incluirSeguros,
+          dias_gracia: diasGracia,
+          cae: currentCae
+        });
 
-      // Sincronizar reactivamente el progreso en Firestore en segundo plano para persistencia robusta
-      if (user && activeJourney) {
-        saveJourney(
-          "parametros_calculados",
-          2,
-          {
-            monto: baseAmount,
-            celular,
-            indicativoPais,
-            cuotas,
-            diasGracia,
-            incluirSeguros,
-            valorCuota: cuota,
-            ctc: cuota * cuotas
-          }
-        ).catch(console.error);
-      }
+        if (user && activeJourneyRef.current) {
+          saveJourney(
+            "parametros_calculados",
+            2,
+            {
+              monto: baseAmount,
+              celular,
+              indicativoPais,
+              cuotas,
+              diasGracia,
+              incluirSeguros,
+              valorCuota: cuota,
+              ctc: cuota * cuotas
+            }
+          ).catch(console.error);
+        }
+      }, 700);
+
+      return () => clearTimeout(timer);
     }
-  }, [monto, cuotas, diasGracia, incluirSeguros, step, user, activeJourney]);
+  }, [monto, cuotas, diasGracia, incluirSeguros, step, user]);
 
   const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRut(formatRut(e.target.value));
