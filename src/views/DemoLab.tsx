@@ -15,7 +15,7 @@ export default function DemoLab() {
   const [progress, setProgress] = useState(0);
   const [preset, setPreset] = useState("default");
 
-  const [apiKey, setApiKey] = useState((import.meta as any).env.VITE_AMPLITUDE_API_KEY || "cce51808526c9ce95082ce3d4ac97106");
+  const [apiKey, setApiKey] = useState((import.meta as any).env.VITE_AMPLITUDE_API_KEY || "714214e5842a299f3fa47e23db5fe728");
 
   const tabs = [
     { id: "consumo", label: "Crédito de Consumo" },
